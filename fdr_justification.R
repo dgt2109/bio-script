@@ -32,7 +32,7 @@ colnames(track) <- c("IVW beta","IVW se","IVW P",
                      "Egger intercept", "Egger intercept P")
 
 # iterate over expanding variant sets and calculate MR parameters
-for (i in 1:511) {
+for (i in 1:nrow(dorder)) {
   data <- head(dorder,i)
   
   W <- cbind(data$LDL_beta,data$TG_beta)
@@ -105,34 +105,37 @@ altcol=4
 
 # plot results of iterated regressions
 png(se_file,width=plotwidth,height=plotheight,units="in",res=600)
-plot(track$`Egger se`,pch=2,col=altcol,xlab="# Variants, ordered by first-stage P-value",
-     ylab="HDL-C coefficient SE",main="Standard Error",
-     ylim=c(0,0.15),cex=0.5)
-points(track$`IVW se`,pch=1,col=1,cex=0.5)
+plot(track$`Egger se`,pch=20,col=altcol,xlab="# Variants",
+     ylab=expression(paste("HDL-C ",beta," Coeff. SE")),
+     main=expression(paste("HDL-C ",beta," Coeff. Standard Error vs Variant Set Size")),
+     ylim=c(0,0.15),cex=0.5,bty="n",font.main=1)
+points(track$`IVW se`,pch=20,col=1,cex=0.5)
 #abline(h=-tail(track$`Egger beta`,1)/2,lty=3)
-legend("topright",legend=c("MR-IVW","MR-EGGER"),col=c(1,altcol),pch=c(1,2))
+legend("topright",legend=c("MR-IVW","MR-EGGER"),col=c(1,altcol),pch=c(20,20),bty="n")
 dev.off() 
 
 png(p_file,width=plotwidth,height=plotheight,units="in",res=600)
-plot(log(track$`Egger P`),pch=2,col=altcol,xlab="# Variants, ordered by first-stage P-value",
-     ylab="log HDL-C coefficient P",main="Log P-value",
-     ylim=c(-9,1),cex=0.5)
+plot(log(track$`Egger P`),pch=20,col=altcol,xlab="# Variants",
+     ylab=expression(paste("log HDL-C ",beta, " coeff. P")),
+     main="Log HDL-C P-value vs Variant Set Size",
+     ylim=c(-9,1),cex=0.5,bty="n",font.main=1)
 abline(h=log(0.05),lty=3)
-points(log(track$`IVW P`),pch=1,col=1,cex=0.5)
-legend("bottomleft",legend=c("MR-IVW","MR-EGGER"),col=c(1,altcol),pch=c(1,2))
+points(log(track$`IVW P`),pch=20,col=1,cex=0.5)
+legend("bottomleft",legend=c("MR-IVW","MR-EGGER"),col=c(1,altcol),pch=c(20,20),bty="n")
 dev.off() 
 
 png(beta_file,width=plotwidth,height=plotheight,units="in",res=600)
-plot(track$`Egger beta`,pch=2,col=altcol,xlab="# Variants, ordered by first-stage P-value",
-     ylab="HDL-C coefficient estimate",main="HDL-C Coefficient",
-     ylim=c(-0.15,0.15),cex=0.5)
-points(track$`IVW beta`,pch=1,col=1,cex=0.5)
-legend("topright",legend=c("MR-IVW","MR-EGGER"),col=c(1,altcol),pch=c(1,2))
+plot(track$`Egger beta`,pch=20,col=altcol,xlab="# Variants",
+     ylab=expression(paste("HDL-C ",beta," coeff.")),
+     main=expression(paste("HDL-C ",beta, " Coeff. vs Variant Set Size")),
+     ylim=c(-0.15,0.15),cex=0.5,bty="n",font.main=1)
+points(track$`IVW beta`,pch=20,col=1,cex=0.5)
+legend("topright",legend=c("MR-IVW","MR-EGGER"),col=c(1,altcol),pch=c(20,20),bty="n")
 dev.off()
 
 png(intercept_file,width=plotwidth,height=plotheight,units="in",res=600)
-plot(track$`Egger intercept`,pch=2,col=altcol,xlab="# Variants, ordered by first-stage P-value",
-     ylab="MR-EGGER intercept estimate",main="MR-EGGER Intercept",cex=0.5,
-     ylim=c(-0.015,0.002))
+plot(track$`Egger intercept`,pch=20,col=altcol,xlab="# Variants",
+     ylab="MR-EGGER intercept",main="HDL-C MR-EGGER Intercept vs Variant Set Size",
+     cex=0.5,ylim=c(-0.015,0.005),bty="n",font.main=1)
 abline(h=0)
 dev.off()

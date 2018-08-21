@@ -2,10 +2,11 @@ library(MendelianRandomization)
 library(matrixStats)
 
 # set parameters
-dataset="FDR" # set dataset to "GW" = genome-wide sig. or "FDR" = FDR-sig.
-EXCLUDE_WEAK = TRUE
-PLOTTING = FALSE
-TABLES = TRUE
+dataset="GW" # set dataset to "GW" = genome-wide sig. or "FDR" = FDR-sig.
+EXCLUDE_WEAK = FALSE
+PLOTTING = TRUE
+TABLES = FALSE
+SUPPLEMENT = FALSE
 
 # outlier lists derived from MR-PRESSO runs (too time consuming to run here)
 outlier_GW_HDL <- -c(2,3,4,7,15,23,33,34,41,54,65)
@@ -35,7 +36,8 @@ for (i in 1:3) {
       } else if(lipid == "LDL-C") { outlist <- outlier_FDR_LDL
       } else if(lipid == "TG") { outlist <- outlier_FDR_TG }
       table_id="table_547"
-      point_thickness=0.35
+      point_thickness=0.4
+      ds_name="FDR-significant"
     } else if (dataset == "GW") {
       base_dir="C:/Users/David/Desktop/genetics/data/GW/"
       if(lipid == "HDL-C") { outlist <- outlier_GW_HDL
@@ -43,6 +45,7 @@ for (i in 1:3) {
       } else if(lipid == "TG") { outlist <- outlier_GW_TG }
       table_id="table_179"
       point_thickness=0.5
+      ds_name="GW-significant"
     }
     
     # data input
@@ -76,17 +79,14 @@ for (i in 1:3) {
       data1=cbind(data$HDL_beta,data$HDL_se)
       data2=cbind(data$TG_beta,data$TG_se)
       data3=cbind(data$LDL_beta,data$LDL_se)
-      adj_cov="HDL-C- and TG-"
     } else if(lipid == "HDL-C") {
       data1=cbind(data$LDL_beta,data$LDL_se)
       data2=cbind(data$TG_beta,data$TG_se)
       data3=cbind(data$HDL_beta,data$HDL_se)
-      adj_cov="LDL-C- and TG-"
     } else if(lipid == "TG") {
       data1=cbind(data$LDL_beta,data$LDL_se)
       data2=cbind(data$HDL_beta,data$HDL_se)
       data3=cbind(data$TG_beta,data$TG_se)
-      adj_cov="LDL-C- and HDL-C-"
     }
     
     W <- cbind(data1[,1],data2[,1])
@@ -133,7 +133,7 @@ for (i in 1:3) {
                         psi = 0,
                         distribution = "normal",
                         alpha = 0.05)
-    
+    if (j == 2) { print(IVWObject$Estimate) }
     
     EggerObject <- mr_egger(MRInputObject,
                             robust = FALSE,
@@ -141,18 +141,40 @@ for (i in 1:3) {
                             correl = FALSE,
                             distribution = "normal",
                             alpha = 0.05)
-    
+#    if (j == 2) { print(EggerObject$Estimate) }
+        
     # regression plots
     if(PLOTTING && j == 2 && EXCLUDE_WEAK == FALSE) {
-      plot_file=paste(base_dir,table_id,lipid,".png",sep="")
-      png(plot_file,width=6,height=4,units="in",res=600)
+      supplement_tag=""
+      plot_dim <- 6
+      if (SUPPLEMENT) { 
+        supplement_tag = "suppl" 
+        plot_dim <- 4
+      }
+      plot_file=paste(base_dir,table_id,lipid,supplement_tag,".png",sep="")
+      png(plot_file,width=plot_dim,height=4,units="in",res=600)
       plot(adjusted_x,adjusted_y,
-           xlab=paste("SD change in ",lipid," per allele",sep=""),
-           ylab=paste(adj_cov,"adjusted logOR CAD",sep=""),
-           main=paste(lipid," vs. lipid-adjusted CAD risk",sep=""),
-           pch=20,cex=point_thickness)
-      abline(0,IVWObject$Estimate,lty=3)
-      abline(h=0)
+           xlab=paste(lipid," effect size",sep=""),
+           ylab=paste("Adjusted logOR CAD",sep=""),
+           main=paste(lipid,", ",ds_name," variants",sep=""),
+           font.main=1,
+           bty="n",
+           axes=TRUE,
+           xlim=c(0,ceiling(max(adjusted_x)*20)/20),
+           ylim=c(min(adjusted_y)-0.015,max(adjusted_y)+0.015),
+           pch=20,
+           cex=point_thickness,
+           cex.lab=1.2)
+      abline(0,IVWObject$Estimate,lty=2, col=1)
+      if (SUPPLEMENT) {
+        if (lipid == "HDL-C") { lpos = "topright" }
+        if (lipid == "LDL-C") {lpos = "bottomright" }
+        if (lipid == "TG") {lpos = "bottomright" }
+        abline(EggerObject$Intercept,EggerObject$Estimate,lty=2,col=4)
+        legend(lpos,legend=c("MR-IVW","MR-EGGER"),col=c(1,4),lty=c(2,2),bty="n")
+      }
+#      axis(1,pos=0,at=c(0,0.05,0.10,0.15,0.20,0.25))
+#      axis(2,pos=0)
       dev.off()
     }  
     
