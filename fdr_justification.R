@@ -130,6 +130,7 @@ plot(track$`Egger beta`,pch=20,col=altcol,xlab="# Variants",
      main=expression(paste("HDL-C ",beta, " Coeff. vs Variant Set Size")),
      ylim=c(-0.15,0.15),cex=0.5,bty="n",font.main=1)
 points(track$`IVW beta`,pch=20,col=1,cex=0.5)
+abline(h=0)
 legend("topright",legend=c("MR-IVW","MR-EGGER"),col=c(1,altcol),pch=c(20,20),bty="n")
 dev.off()
 

@@ -2,7 +2,7 @@ library(MendelianRandomization)
 library(matrixStats)
 
 # set parameters
-dataset="GW" # set dataset to "GW" = genome-wide sig. or "FDR" = FDR-sig.
+dataset="FDR" # set dataset to "GW" = genome-wide sig. or "FDR" = FDR-sig.
 EXCLUDE_WEAK = FALSE
 PLOTTING = TRUE
 TABLES = FALSE
@@ -58,7 +58,11 @@ for (i in 1:3) {
     regression_summary=paste(base_dir,table_id,weak_app,".csv",sep="")
     
     # on second iteration, remove MR-PRESSO outliers from outlist
-    if(j == 2) { data <- input_data[outlist, ] } else { data <- input_data}
+    if(j == 2) { 
+      data <- input_data[outlist, ] 
+      ex_data <- input_data[-outlist, ]
+    } 
+    else { data <- input_data }
     
     # if parameter set, exclude variants with first-stage F-statistic < 11
     if(EXCLUDE_WEAK) {
@@ -79,14 +83,17 @@ for (i in 1:3) {
       data1=cbind(data$HDL_beta,data$HDL_se)
       data2=cbind(data$TG_beta,data$TG_se)
       data3=cbind(data$LDL_beta,data$LDL_se)
+      adj_tag="HDL-C- and TG-"
     } else if(lipid == "HDL-C") {
       data1=cbind(data$LDL_beta,data$LDL_se)
       data2=cbind(data$TG_beta,data$TG_se)
       data3=cbind(data$HDL_beta,data$HDL_se)
+      adj_tag="LDL-C- and TG-"
     } else if(lipid == "TG") {
       data1=cbind(data$LDL_beta,data$LDL_se)
       data2=cbind(data$HDL_beta,data$HDL_se)
       data3=cbind(data$TG_beta,data$TG_se)
+      adj_tag="LDL-C- and HDL-C-"
     }
     
     W <- cbind(data1[,1],data2[,1])
@@ -112,10 +119,32 @@ for (i in 1:3) {
     
     adjusted_y <- y - MRMVObject_y$Estimate[1]*W[,1] - MRMVObject_y$Estimate[2]*W[,2]
     adjusted_x <- x - MRMVObject_x$Estimate[1]*W[,1] - MRMVObject_x$Estimate[2]*W[,2]
+    
+    if(j == 2) {
+      if(lipid == "LDL-C") {
+        adj_ex_y <- ex_data$CAD_beta - MRMVObject_y$Estimate[1]*ex_data$HDL_beta - 
+          MRMVObject_x$Estimate[2]*ex_data$TG_beta
+        adj_ex_x <- ex_data$LDL_beta - MRMVObject_x$Estimate[1]*ex_data$HDL_beta - 
+          MRMVObject_x$Estimate[2]*ex_data$TG_beta
+      } else if(lipid == "HDL-C") {
+        adj_ex_y <- ex_data$CAD_beta - MRMVObject_y$Estimate[1]*ex_data$LDL_beta - 
+          MRMVObject_x$Estimate[2]*ex_data$TG_beta
+        adj_ex_x <- ex_data$HDL_beta - MRMVObject_x$Estimate[1]*ex_data$LDL_beta - 
+          MRMVObject_x$Estimate[2]*ex_data$TG_beta
+      } else if(lipid == "TG") {
+        adj_ex_y <- ex_data$CAD_beta - MRMVObject_y$Estimate[1]*ex_data$LDL_beta - 
+          MRMVObject_x$Estimate[2]*ex_data$HDL_beta
+        adj_ex_x <- ex_data$TG_beta - MRMVObject_x$Estimate[1]*ex_data$LDL_beta - 
+          MRMVObject_x$Estimate[2]*ex_data$HDL_beta
+      }
+      
+      adj_ex_y[adj_ex_x < 0] <- -adj_ex_y[adj_ex_x < 0]
+      adj_ex_x[adj_ex_x < 0] <- -adj_ex_x[adj_ex_x < 0]
+    }
 
     adjusted_y[adjusted_x < 0] <- -adjusted_y[adjusted_x < 0]
     adjusted_x[adjusted_x < 0] <- -adjusted_x[adjusted_x < 0]
-    
+
     # set up IVW and EGGER objects on lipid covariate adjusted CAD
     MRInputObject <- mr_input(bx = adjusted_x,
                               bxse = xerr,
@@ -133,7 +162,7 @@ for (i in 1:3) {
                         psi = 0,
                         distribution = "normal",
                         alpha = 0.05)
-    if (j == 2) { print(IVWObject$Estimate) }
+#    if (j == 2) { print(IVWObject$Estimate) }
     
     EggerObject <- mr_egger(MRInputObject,
                             robust = FALSE,
@@ -146,6 +175,9 @@ for (i in 1:3) {
     # regression plots
     if(PLOTTING && j == 2 && EXCLUDE_WEAK == FALSE) {
       supplement_tag=""
+      xmax=ceiling(max(c(adjusted_x,adj_ex_x))*20)/20
+      ymin=min(c(adjusted_y,adj_ex_y)-0.015)
+      ymax=max(c(adjusted_y,adj_ex_y)+0.015)
       plot_dim <- 6
       if (SUPPLEMENT) { 
         supplement_tag = "suppl" 
@@ -155,17 +187,20 @@ for (i in 1:3) {
       png(plot_file,width=plot_dim,height=4,units="in",res=600)
       plot(adjusted_x,adjusted_y,
            xlab=paste(lipid," effect size",sep=""),
-           ylab=paste("Adjusted logOR CAD",sep=""),
+           ylab=paste(adj_tag,"adjusted logOR CAD",sep=""),
            main=paste(lipid,", ",ds_name," variants",sep=""),
            font.main=1,
            bty="n",
            axes=TRUE,
-           xlim=c(0,ceiling(max(adjusted_x)*20)/20),
-           ylim=c(min(adjusted_y)-0.015,max(adjusted_y)+0.015),
+           xlim=c(0,xmax),
+           ylim=c(ymin,ymax),
            pch=20,
            cex=point_thickness,
            cex.lab=1.2)
-      abline(0,IVWObject$Estimate,lty=2, col=1)
+      if (j==2) { points(adj_ex_x, adj_ex_y,cex=point_thickness*1.5) }
+      abline(0,IVWObject$Estimate,lty=1, col=1)
+      abline(0,IVWObject$Estimate-2*IVWObject$StdError,lty=3,col=1)
+      abline(0,IVWObject$Estimate+2*IVWObject$StdError,lty=3,col=1)
       if (SUPPLEMENT) {
         if (lipid == "HDL-C") { lpos = "topright" }
         if (lipid == "LDL-C") {lpos = "bottomright" }
@@ -184,6 +219,7 @@ for (i in 1:3) {
                     exp(EggerObject$CIUpper.Est), EggerObject$Pvalue.Est,
                     EggerObject$Intercept, EggerObject$CILower.Int,
                     EggerObject$CIUpper.Int, EggerObject$Pvalue.Int)
+    # get p from SE/beta: pnorm(-abs(IVWObject$Estimate/IVWObject$StdError))*2
     regression_params <- rbind(regression_params,iter_stats)
   }
 }
