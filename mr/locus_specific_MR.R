@@ -8,10 +8,10 @@ CAD_dataset <- read.table("C:/Genetics/Datasets/CAD_data.txt",header=TRUE,string
 chrpos <- CAD_dataset[, c("rsid","Chr","Pos")]
 data <- merge(data, chrpos, by="rsid")
 
-loci <- data.frame(Gene=c("LIPG","LIPG N396S","LCAT","LPL","MLXIPL","CETP","LIPC","FADS","TTC39B","APOC3","ANGPTL4","PLTP"),
-                   Chr=c(18,18,16,8,7,16,15,11,9,11,19,20),
-                   Pos=c(47087069,47087069,67978656,19796582,73038903,56995835,58702953,61583675,15307358,116700624,8429011,44541003),
-                   Analysis=c("HDL","HDL","HDL","TG","TG","HDL","HDL","TG","HDL","TG","TG","HDL"))
+loci <- data.frame(Gene=c("LIPG","LIPG N396S","LCAT","LPL","MLXIPL","CETP","LIPC","FADS","APOC3","ANGPTL4"),
+                   Chr=c(18,18,16,8,7,16,15,11,11,19),
+                   Pos=c(47087069,47087069,67978656,19796582,73038903,56995835,58702953,61583675,116700624,8429011),
+                   Analysis=c("HDL","HDL","HDL","TG","TG","HDL","HDL","TG","TG","TG"))
 
 SNPs <- list()
 res_all <- list()
@@ -84,8 +84,8 @@ for (i in 1:nrow(loci)) {
   OR_all[[i]] <- OR  
 }
 
-fig_width = c(4,8,4,4,4,4,4,5,4,4,4)
-fig_height = c(2.25,2.25,2.25,3.25,2.25,5.5,3,2,2,4,4)
+fig_width = c(4,8,4,4,4,4,4,5,4,4)
+fig_height = c(2.25,2.25,2.25,3.25,2.25,5.5,3,2,4,4)
 axislabel = paste0("OR CAD per s.d. ", loci$Analysis)
 # forest plot
 for (i in 1:nrow(loci)) {
@@ -111,5 +111,3 @@ for (i in 1:nrow(loci)) {
   dev.off()
 #  forestplot(labels, OR[4,], OR[6,], OR[5,], is.summary=c(rep(FALSE,ncol(OR)-1),TRUE),clip=c(0,3))
 }
-
-# p-value from t score for 2-sided test: 2*pt(-abs(t),df=xxx)
