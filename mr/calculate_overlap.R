@@ -1,3 +1,4 @@
+library(stargazer)
 
 # import SNP lists -> make table with all other associations
 P_THRESHOLD <- 2e-5

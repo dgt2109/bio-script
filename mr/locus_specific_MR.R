@@ -2,16 +2,16 @@ library(rmeta)
 
 data <- read.table("C:/Genetics/SNP_Table/table_three-trait.txt", header = TRUE,
                    stringsAsFactors = FALSE)
-param <- read.table("C:/Genetics/Results/three-trait_MR-results.txt", header=TRUE, stringsAsFactors=FALSE)
+param <- read.table("C:/Genetics/Results/three-trait_MRPRESSO-results.txt", header=TRUE, stringsAsFactors=FALSE)
 
 CAD_dataset <- read.table("C:/Genetics/Datasets/CAD_data.txt",header=TRUE,stringsAsFactors=FALSE)
 chrpos <- CAD_dataset[, c("rsid","Chr","Pos")]
 data <- merge(data, chrpos, by="rsid")
 
-loci <- data.frame(Gene=c("LIPG","LIPG N396S","LCAT","LPL","MLXIPL","CETP","LIPC","FADS","TTC39B"),
-                   Chr=c(18,18,16,8,7,16,15,11,9),
-                   Pos=c(47087069,47087069,67978656,19796582,73038903,56995835,58702953,61583675,15307358),
-                   Analysis=c("HDL","HDL","HDL","TG","TG","HDL","HDL","TG","HDL"))
+loci <- data.frame(Gene=c("LIPG","LIPG N396S","LCAT","LPL","MLXIPL","CETP","LIPC","FADS","TTC39B","APOC3","ANGPTL4","PLTP"),
+                   Chr=c(18,18,16,8,7,16,15,11,9,11,19,20),
+                   Pos=c(47087069,47087069,67978656,19796582,73038903,56995835,58702953,61583675,15307358,116700624,8429011,44541003),
+                   Analysis=c("HDL","HDL","HDL","TG","TG","HDL","HDL","TG","HDL","TG","TG","HDL"))
 
 SNPs <- list()
 res_all <- list()
@@ -21,7 +21,7 @@ for (i in 1:nrow(loci)) {
   if (i == 1) { locus <- locus[-c(3), ] }
   if (i == 2) { 
     locus <- rbind(locus[3, ],locus[3, ],locus[3, ])
-    OR_Voight <- log(c(0.94, 0.82, 1.09))
+    OR_Voight <- log(c(0.99, 0.88, 1.11))
     SE_Voight <- mean(OR_Voight[3]-OR_Voight[1], OR_Voight[1]-OR_Voight[2])/1.96
     locus[1,c("CAD_Beta","CAD_SE","CAD_P")] <- c(OR_Voight[1]*-1, SE_Voight, 0.41) # add Voight CAD data
     locus[2,c("CAD_Beta","CAD_SE","CAD_P")] <- c(0.101958,0.0508976,0.0451558)# add Nikpay CAD data
@@ -51,6 +51,7 @@ for (i in 1:nrow(loci)) {
   OR <- data.frame(matrix(nrow=6,ncol=nrow(SNP_list)+1))
   rownames(OR) <- c("OR", "Upper", "Lower", "Adj OR", "Adj Upper", "Adj Lower")
   colnames(OR) <- c(SNP_list$rsid, paste0(nrow(SNP_list)," ", loci$Gene[i], " SNPs"))
+  if (i == 8 ) { colnames(OR)[ncol(OR)] <- "1 FADS1 SNP" }
   for (j in 1:nrow(SNP_list)) {
     SNP <- SNP_list[j, ]
     if (loci[i,4] == "HDL") {
@@ -83,20 +84,26 @@ for (i in 1:nrow(loci)) {
   OR_all[[i]] <- OR  
 }
 
-fig_width = c(4,8,4,4,4)
-fig_height = c(2.25,2.25,2.25,3.25,2.25)
-axislabel = c("OR CAD per s.d. HDL-C","OR CAD per s.d. HDL-C", "OR CAD per s.d. HDL-C", "OR CAD per s.d. TG", "OR CAD per s.d. TG")
+fig_width = c(4,8,4,4,4,4,4,5,4,4,4)
+fig_height = c(2.25,2.25,2.25,3.25,2.25,5.5,3,2,2,4,4)
+axislabel = paste0("OR CAD per s.d. ", loci$Analysis)
 # forest plot
-for (i in 1:5) {
+for (i in 1:nrow(loci)) {
+  print(i)
   OR <- data.matrix(OR_all[[i]])
   tiff(paste0("C:/Genetics/Figures/",loci[i,1],".tif"),width=fig_width[i],height=fig_height[i],units="in",res=500)
   if (i == 2) {
     OR <- OR[, 1:ncol(OR)-1]
-    labels <- cbind(paste0(rep("LIPG N396S"),c(", CARDIoGRAM", ", CARDIoGRAMplusC4D", ", CARDIoGRAMplusC4D+UKBB CAD")),rep("",ncol(OR)))
-    forestplot(labels, log(OR[1,]), log(OR[3,]), log(OR[2,]), is.summary=c(rep(FALSE,ncol(OR)),TRUE),
+    labels <- cbind(c("",paste0(rep("LIPG N396S"),c(", Voight et al. meta-analysis", ", CARDIoGRAMplusC4D", ", CARDIoGRAMplusC4D+UKBB CAD"))),
+                    c("n Cases","20,913","60,801","122,733"),
+                    c("n Controls","95,407","123,504","424,528"))
+    forestplot(labels, c(NA,log(OR[1,])), c(NA,log(OR[3,])), c(NA,log(OR[2,])), is.summary=c(TRUE,rep(FALSE,ncol(OR))),
                clip=c(-1.0,1.6), xlog=T, xlab=axislabel[i])  
   } else {
-    OR[,1:ncol(OR)-1] <- OR[,1:ncol(OR)-1][,order(OR[,1:ncol(OR)-1][1,])]
+    if (ncol(OR) > 2) { # reorder columns
+      OR <- cbind(OR[,1:ncol(OR)-1][,order(OR[,1:ncol(OR)-1][1,])],OR[,ncol(OR)])
+      colnames(OR)[ncol(OR)] <- colnames(OR_all[[i]])[ncol(OR)]
+    }
     labels <- cbind(colnames(OR),rep("",ncol(OR)))
     forestplot(labels, log(OR[1,]), log(OR[3,]), log(OR[2,]), is.summary=c(rep(FALSE,ncol(OR)-1),TRUE),
                clip=c(-0.7,1.6), xlog=T, xlab=axislabel[i])

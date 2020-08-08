@@ -6,12 +6,12 @@ library(ggplot2)
 
 data <- read.table("C:/Genetics/SNP_Table/table_three-trait.txt", header=TRUE, stringsAsFactors=FALSE)
 
-# outlier_data <- read.table("C:/Genetics/MRPRESSO/three-trait_MRPRESSO.txt", header = TRUE, stringsAsFactors = FALSE)
-# rsid_MRPRESSO <- outlier_data[outlier_data$Pvalue < 0.05, 1]
-# data <- data[!(data$rsid %in% rsid_MRPRESSO), ]
+outlier_data <- read.table("C:/Genetics/MRPRESSO/three-trait_MRPRESSO.txt", header = TRUE, stringsAsFactors = FALSE)
+rsid_MRPRESSO <- outlier_data[outlier_data$Pvalue < 0.05, 1]
+data <- data[!(data$rsid %in% rsid_MRPRESSO), ]
 
-#param <- read.table("C:/Genetics/Results/three-trait_MRPRESSO-results.txt", header=TRUE, stringsAsFactors=FALSE)
-param <- read.table("C:/Genetics/Results/three-trait_MR-results.txt", header=TRUE, stringsAsFactors=FALSE)
+param <- read.table("C:/Genetics/Results/three-trait_MRPRESSO-results.txt", header=TRUE, stringsAsFactors=FALSE)
+#param <- read.table("C:/Genetics/Results/three-trait_MR-results.txt", header=TRUE, stringsAsFactors=FALSE)
 rownames(param) <- make.unique(param[,1])
 param <- param[,-1]
 
