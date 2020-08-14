@@ -18,7 +18,7 @@ for (i in 1:length(SNPs)) {
                                                     betas[6]*crossref[[i]]$T2D_Beta
   crossref[[i]]$CAD_adj <- crossref[[i]]$CAD_adj - ifelse(is.na(crossref[[i]]$SBP_Beta),0,
                                                     betas[5]*crossref[[i]]$SBP_Beta)
-  beta_indexes <- 1:7*3+1
+  beta_indexes <- 1:8*3+1
   if(loci$Analysis[i] == "HDL") {
     crossref[[i]]$CAD_adj <- crossref[[i]]$CAD_adj - betas[3]*crossref[[i]]$TG_Beta
     crossref[[i]]$OR <- exp(crossref[[i]]$CAD_Beta / crossref[[i]]$HDL_Beta)
